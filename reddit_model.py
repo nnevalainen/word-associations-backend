@@ -55,8 +55,7 @@ class RedditModel:
         negative = [self._clean_word(w) for w in negative]
 
         try:
-            results = self.model.most_similar(positive=positive, negative=negative, topn=2*n)
-            return self._filter_results(results, n)
+            return self.model.most_similar(positive=positive, negative=negative, topn=n)
         except KeyError as e:
             raise NotInCorpusError from e
 
