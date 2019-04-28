@@ -5,8 +5,8 @@ from flask import request
 from flask import jsonify
 from flask_cors import CORS, cross_origin
 
-from .my_exceptions import NotInCorpus
-from .word2vec.reddit_model import RedditModel, NotInCorpusError
+from my_exceptions import NotInCorpus
+from reddit_model import RedditModel, NotInCorpusError
 
 reddit_model = RedditModel()
 app = Flask(__name__)
