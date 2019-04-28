@@ -1,4 +1,5 @@
-import pickle
+import itertools
+import os
 
 from gensim.models import Word2Vec
 from gensim.models import KeyedVectors
@@ -11,8 +12,10 @@ class RedditModel:
 
     def __init__(self):
         self.model = self._load_model()
-
+        self.lemmatizer = nltk.WordNetLemmatizer()
+        self.stemmer = nltk.PorterStemmer()
         self.country_fixes = {}
+        self.coutries = self._read_countries()
 
     def get_similarity(self, word1, word2):
         
@@ -39,7 +42,8 @@ class RedditModel:
         word = self._clean_word(word)
         
         try:
-            return self.model.wv.most_similar(word, topn=n)
+            results = self.model.wv.most_similar(word, topn=2*n)
+            return self._filter_results(results, n)
         except KeyError as e:
            raise NotInCorpusError from e
     
@@ -49,9 +53,18 @@ class RedditModel:
         negative = [self._clean_word(w) for w in negative]
 
         try:
-            return self.model.most_similar(positive=positive, negative=negative, topn=n)
+            results = self.model.most_similar(positive=positive, negative=negative, topn=2*n)
+            return self._filter_results(results, n)
         except KeyError as e:
             raise NotInCorpusError from e
+
+    def _read_countries(self):
+        path = os.path.join(os.path.dirname(__file__), 'countries.txt')
+        with open(path, 'r') as fp:
+            countries = fp.readlines()
+
+        countries = [country.strip().replace('{', '').replace('}', '') for country in countries]
+        return [self.lemmatizer.lemmatize(self.stemmer.stem(country)) for country in countries]
 
     def _train_model(self):
         raise NotImplementedError
@@ -64,6 +77,20 @@ class RedditModel:
             fname (str)     path to cached model
         """
         return KeyedVectors.load_word2vec_format(fname, binary=True)
+
+    def _filter_results(self, results, n):
+        """
+        Return only countries from results
+
+        Params:
+            results (list(str))     results from gensim
+            n (int)                 number of countries to return
+        
+        Returns
+            (list(str))
+        """
+        countries = filter(lambda x: x[0] in self.coutries, results)
+        return list(itertools.islice(countries, n))
 
     def _clean_word(self, word):
         """
@@ -78,6 +105,7 @@ class RedditModel:
             (str) word
         """
         cleaned_word = word.strip().lower()
+        cleaned_word = self.lemmatizer.lemmatize(self.stemmer.stem(cleaned_word))
         
         return self.country_fixes[cleaned_word] if cleaned_word in self.country_fixes.keys() else cleaned_word
 
@@ -85,7 +113,7 @@ if __name__ == '__main__':
 
     model = RedditModel()
 
-    print(model.get_nearest_algebra(positive=['King, woman'], negative=['man'], n=10))
+    print(model.get_nearest('finland', n=5))
 
 
         
