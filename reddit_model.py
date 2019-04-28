@@ -5,6 +5,8 @@ from gensim.models import Word2Vec
 from gensim.models import KeyedVectors
 import nltk
 
+nltk.data.path.append('./nltk_data/')
+
 class NotInCorpusError(Exception):
     pass
 
