@@ -1,4 +1,5 @@
 gensim
 nltk
 flask
+flask-cors
 gunicorn
